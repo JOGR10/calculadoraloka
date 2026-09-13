@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Sistemas Digitais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14171c;
+    --panel: #1b2028;
+    --panel-raised: #212831;
+    --border: #2a3038;
+    --text: #eef1f5;
+    --muted: #8b93a3;
+    --amber: #ff9f1c;
+    --amber-dim: rgba(255,159,28,0.16);
+    --cyan: #4fd1c5;
+    --danger: #ff6b6b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding: 28px 16px 60px;
+  }
+  .app{
+    width:100%;
+    max-width: 980px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:22px;
+    padding-bottom:16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1{
+    font-size: 1.35rem;
+    font-weight:600;
+    margin:0;
+    letter-spacing: 0.01em;
+  }
+  header .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns: 190px 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 720px){
+    .layout{ grid-template-columns: 1fr; }
+    nav.tabs{
+      flex-direction:row !important;
+      overflow-x:auto;
+      gap:6px !important;
+    }
+    nav.tabs button{ flex: 0 0 auto; white-space:nowrap; }
+  }
+  nav.tabs{
+    display:flex;
+    flex-direction:column;
+    gap: 4px;
+  }
+  nav.tabs button{
+    text-align:left;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 0.86rem;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor:pointer;
+    position:relative;
+    transition: color .15s ease, background .15s ease;
+  }
+  nav.tabs button:hover{ color: var(--text); background: var(--panel); }
+  nav.tabs button.active{
+    color: var(--amber);
+    background: var(--amber-dim);
+    font-weight:600;
+  }
+  nav.tabs button.active::before{
+    content:"";
+    position:absolute;
+    left:-1px; top:8px; bottom:8px;
+    width:2px;
+    background: var(--amber);
+    border-radius: 2px;
+  }
+  main{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    min-height: 420px;
+  }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .panel h2{
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+    font-weight:600;
+  }
+  .panel .desc{
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin: 0 0 20px;
+  }
+  label{
+    display:block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  label:first-of-type{ margin-top:0; }
+  select, input[type=text]{
+    width:100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    padding: 9px 10px;
+    border-radius: 6px;
+    outline:none;
+  }
+  select:focus, input[type=text]:focus{ border-color: var(--amber); }
+  .row{ display:flex; gap: 10px; align-items:flex-end; }
+  .row > div{ flex:1; }
+  .row-op{ flex: 0 0 60px; }
+  button.action{
+    margin-top: 18px;
+    background: var(--amber);
+    color: #1a1204;
+    border:none;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.86rem;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: filter .15s ease;
+  }
+  button.action:hover{ filter: brightness(1.08); }
+  button.action:active{ filter: brightness(0.92); }
+  .output{
+    margin-top: 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.86rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--cyan);
+    min-height: 20px;
+  }
+  .output.error{ color: var(--danger); }
+  .output:empty{ display:none; }
+  .output-row{ display:flex; justify-content:space-between; padding: 3px 0; }
+  .output-row .k{ color: var(--muted); }
+  .output-row .v{ color: var(--cyan); }
+  .led-row{ display:flex; gap: 14px; align-items:center; margin-top: 18px; }
+  .led{
+    width: 14px; height:14px; border-radius:50%;
+    background: #3a3f47;
+    border: 1px solid var(--border);
+    transition: all .15s ease;
+  }
+  .led.on{
+    background: var(--amber);
+    box-shadow: 0 0 8px 1px rgba(255,159,28,0.65);
+    border-color: var(--amber);
+  }
+  .led-label{ font-family:'IBM Plex Mono', monospace; font-size:0.78rem; color:var(--muted); }
+  table.truth{
+    margin-top: 18px;
+    border-collapse: collapse;
+    width: 100%;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+  }
+  table.truth th, table.truth td{
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align:center;
+  }
+  table.truth th{
+    background: var(--panel-raised);
+    color: var(--amber);
+    font-weight:600;
+  }
+  table.truth td.result-1{ color: var(--amber); font-weight:600; }
+  table.truth td.result-0{ color: var(--muted); }
+  .hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Calculadora de Sistemas Digitais</h1>
+    <span class="tag">versão web</span>
+  </header>
+
+  <div class="layout">
+    <nav class="tabs">
+      <button data-tab="conversao" class="active">Conversão de Bases</button>
+      <button data-tab="codigos">Códigos Digitais</button>
+      <button data-tab="operacoes">Operações</button>
+      <button data-tab="portas">Portas Lógicas</button>
+      <button data-tab="tabela">Tabela Verdade</button>
+      <button data-tab="simplificacao">Simplificação</button>
+    </nav>
+
+    <main>
+
+      <!-- 1. CONVERSÃO DE BASES -->
+      <section class="panel active" id="conversao">
+        <h2>Conversão de Bases</h2>
+        <p class="desc">Converte um valor entre decimal, binário, octal e hexadecimal.</p>
+
+        <label>Base de origem</label>
+        <select id="conv-base">
+          <option value="10">Decimal</option>
+          <option value="2">Binário</option>
+          <option value="8">Octal</option>
+          <option value="16">Hexadecimal</option>
+        </select>
+
+        <label>Valor</label>
+        <input type="text" id="conv-valor" placeholder="ex: 42">
+
+        <button class="action" onclick="converterBases()">Converter</button>
+        <div class="output" id="conv-out"></div>
+      </section>
+
+      <!-- 2. CÓDIGOS DIGITAIS -->
+      <section class="panel" id="codigos">
+        <h2>Códigos Digitais</h2>
+        <p class="desc">Digite um número decimal (BCD, Gray, Excesso-3) ou um único caractere (ASCII, EBCDIC).</p>
+
+        <label>Entrada</label>
+        <input type="text" id="cod-valor" placeholder="ex: 9 ou A">
+
+        <button class="action" onclick="calcularCodigos()">Gerar Códigos</button>
+        <div class="output" id="cod-out"></div>
+      </section>
+
+      <!-- 3. OPERAÇÕES -->
+      <section class="panel" id="operacoes">
+        <h2>Operações</h2>
+        <p class="desc">Soma, subtração, multiplicação e divisão inteira entre dois números, na base escolhida.</p>
+
+        <label>Base</label>
+        <select id="op-base">
+          <option value="10">Decimal</option>
+          <option value="2">Binário</option>
+          <option value="8">Octal</option>
+          <option value="16">Hexadecimal</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label>Número 1</label>
+            <input type="text" id="op-n1" placeholder="ex: 10">
+          </div>
+          <div class="row-op">
+            <label>Op.</label>
+            <select id="op-operador">
+              <option value="+">+</option>
+              <option value="-">-</option>
+              <option value="*">*</option>
+              <option value="/">/</option>
+            </select>
+          </div>
+          <div>
+            <label>Número 2</label>
+            <input type="text" id="op-n2" placeholder="ex: 3">
+          </div>
+        </div>
+
+        <button class="action" onclick="calcularOperacao()">Calcular</button>
+        <div class="output" id="op-out"></div>
+      </section>
+
+      <!-- 4. PORTAS LÓGICAS -->
+      <section class="panel" id="portas">
+        <h2>Portas Lógicas</h2>
+        <p class="desc">Simula a saída de uma porta lógica para as entradas A e B (B é ignorado em NOT).</p>
+
+        <label>Tipo de porta</label>
+        <select id="porta-tipo">
+          <option>AND</option>
+          <option>OR</option>
+          <option>NOT</option>
+          <option>NAND</option>
+          <option>NOR</option>
+          <option>XOR</option>
+          <option>XNOR</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label>A</label>
+            <select id="porta-a">
+              <option value="0">0</option>
+              <option value="1">1</option>
+            </select>
+          </div>
+          <div>
+            <label>B</label>
+            <select id="porta-b">
+              <option value="0">0</option>
+              <option value="1">1</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="action" onclick="simularPorta()">Simular</button>
+
+        <div class="led-row">
+          <span class="led-label">Saída S =</span>
+          <div class="led" id="porta-led"></div>
+          <span class="led-label" id="porta-valor">-</span>
+        </div>
+      </section>
+
+      <!-- 5. TABELA VERDADE -->
+      <section class="panel" id="tabela">
+        <h2>Tabela Verdade</h2>
+        <p class="desc">Use * para AND, + para OR, ! para NOT (ou as palavras AND / OR / NOT). Parênteses são suportados.</p>
+
+        <label>Expressão</label>
+        <input type="text" id="tv-expr" placeholder="ex: (A * B) + !C">
+
+        <button class="action" onclick="gerarTabelaVerdade()">Gerar Tabela</button>
+        <div id="tv-out"></div>
+      </section>
+
+      <!-- 6. SIMPLIFICAÇÃO -->
+      <section class="panel" id="simplificacao">
+        <h2>Simplificação</h2>
+        <p class="desc">Aplica identidades booleanas básicas (idempotência, identidade, complemento, absorção parcial).</p>
+
+        <label>Expressão booleana</label>
+        <input type="text" id="simp-expr" placeholder="ex: A + A*B + 0">
+
+        <button class="action" onclick="simplificar()">Simplificar</button>
+        <div class="output" id="simp-out"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NAVEGAÇÃO ENTRE ABAS
+   ============================================================ */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+function showOutput(id, text, isError=false){
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.toggle('error', isError);
+}
+
+/* ============================================================
+   1. CONVERSÃO DE BASES
+   ============================================================ */
+function converterBases(){
+  const base = parseInt(document.getElementById('conv-base').value, 10);
+  const valor = document.getElementById('conv-valor').value.trim();
+  if(!valor){ showOutput('conv-out', 'Digite um valor.', true); return; }
+
+  const dec = parseInt(valor, base);
+  if(isNaN(dec)){
+    showOutput('conv-out', 'Valor inválido para a base selecionada.', true);
+    return;
+  }
+  const texto =
+`Decimal:     ${dec}
+Binário:     ${dec.toString(2)}
+Octal:       ${dec.toString(8)}
+Hexadecimal: ${dec.toString(16).toUpperCase()}`;
+  showOutput('conv-out', texto);
+}
+
+/* ============================================================
+   2. CÓDIGOS DIGITAIS
+   ============================================================ */
+function decimalParaBCD(numero){
+  return String(numero).split('').filter(c => /\d/.test(c))
+    .map(d => parseInt(d,10).toString(2).padStart(4,'0')).join(' ');
+}
+function decimalParaGray(numero){
+  const binario = numero.toString(2);
+  let gray = binario[0];
+  for(let i=1;i<binario.length;i++){
+    gray += (parseInt(binario[i-1],10) ^ parseInt(binario[i],10));
+  }
+  return gray;
+}
+function decimalParaExcesso3(numero){
+  return String(numero).split('').filter(c => /\d/.test(c))
+    .map(d => (parseInt(d,10)+3).toString(2).padStart(4,'0')).join(' ');
+}
+const TABELA_EBCDIC = {
+  "A":"11000001","B":"11000010","C":"11000011","D":"11000100","E":"11000101",
+  "F":"11000110","G":"11000111","H":"11001000","I":"11001001","J":"11010001",
+  "K":"11010010","L":"11010011","M":"11010100","N":"11010101","O":"11010110",
+  "P":"11010111","Q":"11011000","R":"11011001","S":"11100010","T":"11100011",
+  "U":"11100100","V":"11100101","W":"11100110","X":"11100111","Y":"11101000",
+  "Z":"11101001","0":"11110000","1":"11110001","2":"11110010","3":"11110011",
+  "4":"11110100","5":"11110101","6":"11110110","7":"11110111","8":"11111000","9":"11111001"
+};
+function codigoEbcdic(c){ return TABELA_EBCDIC[c.toUpperCase()] || "Não disponível"; }
+
+function calcularCodigos(){
+  const val = document.getElementById('cod-valor').value.trim();
+  if(!val){ showOutput('cod-out',''); return; }
+
+  let out = "";
+  if(/^\d+$/.test(val)){
+    const n = parseInt(val,10);
+    out += `BCD:        ${decimalParaBCD(val)}\n`;
+    out += `Gray:       ${decimalParaGray(n)}\n`;
+    out += `Excesso-3:  ${decimalParaExcesso3(val)}\n`;
+  }
+  if(val.length === 1){
+    const cod = val.charCodeAt(0);
+    out += `\n[Caractere '${val}']\n`;
+    out += `ASCII (Dec): ${cod}\n`;
+    out += `ASCII (Hex): ${cod.toString(16).toUpperCase()}\n`;
+    out += `ASCII (Bin): ${cod.toString(2).padStart(8,'0')}\n`;
+    out += `EBCDIC:      ${codigoEbcdic(val)}\n`;
+  }
+  showOutput('cod-out', out || 'Entrada inválida.', !out);
+}
+
+/* ============================================================
+   3. OPERAÇÕES
+   ============================================================ */
+function calcularOperacao(){
+  const base = parseInt(document.getElementById('op-base').value,10);
+  const n1raw = document.getElementById('op-n1').value.trim();
+  const n2raw = document.getElementById('op-n2').value.trim();
+  const op = document.getElementById('op-operador').value;
+
+  const n1 = parseInt(n1raw, base);
+  const n2 = parseInt(n2raw, base);
+  if(isNaN(n1) || isNaN(n2)){
+    showOutput('op-out', 'Números inválidos para a base selecionada.', true);
+    return;
+  }
+
+  let res;
+  if(op === '+') res = n1 + n2;
+  else if(op === '-') res = n1 - n2;
+  else if(op === '*') res = n1 * n2;
+  else if(op === '/'){
+    if(n2 === 0){ showOutput('op-out','Erro: Divisão por Zero', true); return; }
+    res = Math.trunc(n1 / n2);
+  }
+
+  const neg = res < 0;
+  const abs = Math.abs(res);
+  const texto = `Dec: ${res} | Bin: ${neg?'-':''}${abs.toString(2)} | Hex: ${neg?'-':''}${abs.toString(16).toUpperCase()}`;
+  showOutput('op-out', texto);
+}
+
+/* ============================================================
+   4. PORTAS LÓGICAS
+   ============================================================ */
+function simularPorta(){
+  const a = parseInt(document.getElementById('porta-a').value,10);
+  const b = parseInt(document.getElementById('porta-b').value,10);
+  const p = document.getElementById('porta-tipo').value;
+
+  let res = 0;
+  switch(p){
+    case 'AND': res = a & b; break;
+    case 'OR': res = a | b; break;
+    case 'NOT': res = 1 - a; break;
+    case 'NAND': res = 1 - (a & b); break;
+    case 'NOR': res = 1 - (a | b); break;
+    case 'XOR': res = a ^ b; break;
+    case 'XNOR': res = 1 - (a ^ b); break;
+  }
+  document.getElementById('porta-valor').textContent = res;
+  document.getElementById('porta-led').classList.toggle('on', res === 1);
+}
+
+/* ============================================================
+   5. TABELA VERDADE  (parser recursivo: ! > * > +, com parênteses)
+   ============================================================ */
+function tokenizarExpressao(expr){
+  let e = expr.toUpperCase()
+    .replace(/\bAND\b/g, '*')
+    .replace(/\bOR\b/g, '+')
+    .replace(/\bNOT\b/g, '!')
+    .replace(/\s+/g, '');
+  return e.match(/[A-Z]|[01]|[!*+()]/g) || [];
+}
+
+function avaliarExpressao(expr, valores){
+  const tokens = tokenizarExpressao(expr);
+  let pos = 0;
+  const peek = () => tokens[pos];
+  const next = () => tokens[pos++];
+
+  function parseOr(){
+    let val = parseAnd();
+    while(peek() === '+'){ next(); val = val | parseAnd(); }
+    return val;
+  }
+  function parseAnd(){
+    let val = parseNot();
+    while(peek() === '*'){ next(); val = val & parseNot(); }
+    return val;
+  }
+  function parseNot(){
+    if(peek() === '!'){ next(); return parseNot() ? 0 : 1; }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    if(peek() === '('){
+      next();
+      const val = parseOr();
+      if(peek() === ')') next();
+      return val;
+    }
+    const tok = next();
+    if(tok === undefined) throw new Error('Expressão incompleta');
+    if(tok === '0' || tok === '1') return parseInt(tok,10);
+    if(/[A-Z]/.test(tok)){
+      if(!(tok in valores)) throw new Error(`Variável ${tok} sem valor`);
+      return valores[tok];
+    }
+    throw new Error('Token inesperado: ' + tok);
+  }
+
+  const resultado = parseOr();
+  if(pos < tokens.length) throw new Error('Expressão malformada');
+  return resultado;
+}
+
+function gerarTabelaVerdade(){
+  const container = document.getElementById('tv-out');
+  container.innerHTML = '';
+  const expr = document.getElementById('tv-expr').value.trim();
+  if(!expr) return;
+
+  const variaveis = [...new Set((expr.toUpperCase().match(/\b[A-Z]\b/g) || []))].sort();
+  if(variaveis.length === 0){
+    container.innerHTML = '<div class="output error">Nenhuma variável (A-Z) encontrada.</div>';
+    return;
+  }
+  if(variaveis.length > 6){
+    container.innerHTML = '<div class="output error">Use no máximo 6 variáveis.</div>';
+    return;
+  }
+
+  try{
+    const linhas = [];
+    const total = 1 << variaveis.length;
+    for(let i=0;i<total;i++){
+      const valores = {};
+      const bits = [];
+      for(let j=0;j<variaveis.length;j++){
+        const bit = (i >> (variaveis.length - 1 - j)) & 1;
+        valores[variaveis[j]] = bit;
+        bits.push(bit);
+      }
+      const res = avaliarExpressao(expr, valores);
+      linhas.push({bits, res});
+    }
+
+    let html = '<table class="truth"><thead><tr>';
+    variaveis.forEach(v => html += `<th>${v}</th>`);
+    html += '<th>S</th></tr></thead><tbody>';
+    linhas.forEach(l => {
+      html += '<tr>';
+      l.bits.forEach(b => html += `<td>${b}</td>`);
+      html += `<td class="result-${l.res}">${l.res}</td>`;
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }catch(e){
+    container.innerHTML = `<div class="output error">Falha ao processar a expressão: ${e.message}</div>`;
+  }
+}
+
+/* ============================================================
+   6. SIMPLIFICAÇÃO
+   ============================================================ */
+function simplificarExpressao(expressaoInput){
+  let expressao = expressaoInput.replace(/\s+/g,'').toUpperCase()
+    .replace(/\bAND\b/g,'*').replace(/\bOR\b/g,'+').replace(/\bNOT\b/g,'!');
+
+  let alterou = true;
+  while(alterou){
+    const anterior = expressao;
+    expressao = expressao.replace(/([A-Z])\+0/g, '$1');
+    expressao = expressao.replace(/0\+([A-Z])/g, '$1');
+    expressao = expressao.replace(/([A-Z])\*1/g, '$1');
+    expressao = expressao.replace(/1\*([A-Z])/g, '$1');
+    expressao = expressao.replace(/([A-Z])\*0/g, '0');
+    expressao = expressao.replace(/0\*([A-Z])/g, '0');
+    expressao = expressao.replace(/([A-Z])\+1/g, '1');
+    expressao = expressao.replace(/1\+([A-Z])/g, '1');
+    expressao = expressao.replace(/([A-Z])\+\1/g, '$1');
+    expressao = expressao.replace(/([A-Z])\*\1/g, '$1');
+    expressao = expressao.replace(/([A-Z])\+!\1/g, '1');
+    expressao = expressao.replace(/([A-Z])\*!\1/g, '0');
+    if(anterior === expressao) alterou = false;
+  }
+  return expressao;
+}
+
+function simplificar(){
+  const expr = document.getElementById('simp-expr').value.trim();
+  if(!expr){ showOutput('simp-out',''); return; }
+  showOutput('simp-out', simplificarExpressao(expr));
+}
+</script>
+</body>
+</html>
